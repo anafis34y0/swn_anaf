@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Grafik Potensiometer</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      text-align: center;
+      background: #817272;
+    }
+    canvas {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      max-width: 100%;
+    }
+  </style>
+</head>
+<body>
+  <h2>Grafik Nilai Potensiometer</h2>
+  <canvas id="potChart" width="600" height="300"></canvas>
+
+  <script>
+    const firebaseURL = "https://uasswnnofal-default-rtdb.asia-southeast1.firebasedatabase.app/POTENSIO/history.json";
+
+    const ctx = document.getElementById('potChart').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Nilai Potensio',
+          data: [],
+          borderColor: 'rgba(255, 0, 0, 1)',
+          backgroundColor: 'rgba(255, 0, 0, 0.2)',
+          borderWidth: 2,
+          tension: 0.4,
+          pointRadius: 2,
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: false,
+        scales: {
+          x: {
+            type: 'category',
+            ticks: {
+              autoSkip: true,
+              maxTicksLimit: 20
+            }
+          },
+          y: {
+            beginAtZero: true,
+            max: 4095
+          }
+        },
+        plugins: {
+          zoom: {
+            pan: {
+              enabled: true,
+              mode: 'x',
+            },
+            zoom: {
+              wheel: {
+                enabled: false
+              },
+              pinch: {
+                enabled: false
+              },
+              mode: 'x',
+            }
+          }
+        }
+      }
+    });
+
+    async function fetchData() {
+      try {
+        const response = await fetch(firebaseURL);
+        const data = await response.json();
+
+        if (data) {
+          const keys = Object.keys(data);
+          const values = keys.map(key => data[key]);
+
+          const visibleCount = 20;
+          const total = keys.length;
+          const start = total > visibleCount ? total - visibleCount : 0;
+
+          chart.data.labels = keys.map((_, i) => `Data ${i + 1}`);
+          chart.data.datasets[0].data = values;
+
+          // Set tampilan awal ke 20 data terbaru
+          chart.options.scales.x.min = start;
+          chart.options.scales.x.max = total - 1;
+
+          chart.update();
+        }
+      } catch (error) {
+        console.error("Gagal ambil data:", error);
+      }
+    }
+
+    fetchData();
+    setInterval(fetchData, 2000);
+  </script>
+</body>
+</html>
